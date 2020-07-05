@@ -36,4 +36,8 @@ export class User {
   async encryptPassword(): Promise<void> {
     this.password = await bcrypt.hash(this.password, User.SALT_ROUNDS);
   }
+
+  isSamePassword(password: string): Promise<boolean> {
+    return bcrypt.compare(password, this.password);
+  }
 }

@@ -1,13 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { CreateUserDto } from './dtos/create-user.dto';
+import { LogInRequestDto } from './dtos/log-in.dto';
 
 describe('UsersService', () => {
   const user = new User({
+    id: 12345,
     email: 'cf.agudelo96@gmail.com',
     name: 'Carlos Agudelo',
     password: 'Test12345',
@@ -15,6 +18,7 @@ describe('UsersService', () => {
   });
 
   let repository: Repository<User>;
+  let jwtService: JwtService;
   let service: UsersService;
 
   beforeEach(async () => {
@@ -28,9 +32,16 @@ describe('UsersService', () => {
             save: jest.fn(),
           },
         },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn(),
+          },
+        },
       ],
     }).compile();
     repository = module.get<Repository<User>>(getRepositoryToken(User));
+    jwtService = module.get<JwtService>(JwtService);
     service = module.get<UsersService>(UsersService);
   });
 
@@ -60,6 +71,50 @@ describe('UsersService', () => {
       } catch (error) {
         expect(error.message).toBe('The email provided is already in use');
       }
+    });
+  });
+
+  describe('logs in a user', () => {
+    const logInRequestDto: LogInRequestDto = {
+      email: 'cf.agudelo96@gmail.com',
+      password: 'Test12345',
+    };
+
+    it('should throw an error if the email given is not registered', async () => {
+      (repository.findOne as jest.Mock).mockResolvedValue(undefined);
+      try {
+        await service.logIn(logInRequestDto);
+        fail();
+      } catch (error) {
+        expect(error.message).toBe(
+          'There is no user registered with the email provided',
+        );
+      }
+    });
+
+    it('should throw an error if the password given is incorrect', async () => {
+      (repository.findOne as jest.Mock).mockResolvedValue({
+        isSamePassword: jest.fn().mockResolvedValue(false),
+      });
+      try {
+        await service.logIn(logInRequestDto);
+        fail();
+      } catch (error) {
+        expect(error.message).toBe('Invalid password');
+      }
+    });
+
+    it('should work correctly', async () => {
+      const token = 'fake.jwt.token';
+      const id = user.id;
+      (jwtService.sign as jest.Mock).mockReturnValue(token);
+      (repository.findOne as jest.Mock).mockResolvedValue({
+        isSamePassword: jest.fn().mockResolvedValue(true),
+        id,
+      });
+      const result = await service.logIn(logInRequestDto);
+      expect(jwtService.sign).toHaveBeenCalledWith({ id });
+      expect(result).toEqual({ token });
     });
   });
 });

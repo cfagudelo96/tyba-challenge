@@ -21,6 +21,10 @@ export class UsersService {
     return user;
   }
 
+  async findByIdAndToken(id: number, token: string): Promise<User> {
+    return this.usersRepository.findOne({ id, token });
+  }
+
   async register(createUserDto: CreateUserDto): Promise<User> {
     await this.validateUniqueEmail(createUserDto.email);
     return this.usersRepository.save(createUserDto.toEntity());
@@ -45,6 +49,16 @@ export class UsersService {
       throw new BadRequestException('Invalid password');
     }
     const token = this.jwtService.sign({ id: user.id });
+    await this.updateToken(user, token);
     return { token };
+  }
+
+  private async updateToken(user: User, token: string): Promise<void> {
+    user.token = token;
+    await this.usersRepository.save(user);
+  }
+
+  async logOut(user: User): Promise<void> {
+    await this.updateToken(user, null);
   }
 }

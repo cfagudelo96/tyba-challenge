@@ -1,4 +1,13 @@
-import { Controller, Post, Body, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 import { User } from './user.entity';
 import { UsersService } from './users.service';
@@ -18,5 +27,13 @@ export class UsersController {
   @HttpCode(200)
   logIn(@Body() logInRequestDto: LogInRequestDto): Promise<LogInResponseDto> {
     return this.usersService.logIn(logInRequestDto);
+  }
+
+  @Post('log-out')
+  @UseGuards(AuthGuard())
+  @HttpCode(204)
+  logOut(@Req() request: Request): Promise<void> {
+    const { user } = request;
+    return this.usersService.logOut(user as User);
   }
 }

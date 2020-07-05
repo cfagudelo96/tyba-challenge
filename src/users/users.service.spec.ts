@@ -49,6 +49,26 @@ describe('UsersService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('finds a user by id', () => {
+    const id = 12345;
+
+    it('should throw an error if the user is not found', async () => {
+      (repository.findOne as jest.Mock).mockResolvedValue(undefined);
+      try {
+        await service.findByIdOrFail(id);
+        fail();
+      } catch (error) {
+        expect(error.message).toBe('The user was not found');
+      }
+    });
+
+    it('should return the user', async () => {
+      (repository.findOne as jest.Mock).mockResolvedValue(user);
+      const returnedUser = await service.findByIdOrFail(id);
+      expect(returnedUser).toBe(user);
+    });
+  });
+
   describe('registers a new user', () => {
     const createUserDto = new CreateUserDto({
       email: 'cf.agudelo96@gmail.com',

@@ -1,5 +1,9 @@
 import { IsNotEmpty } from 'class-validator';
 
+export class JwtPayload {
+  id: number;
+}
+
 export class LogInResponseDto {
   token: string;
 }

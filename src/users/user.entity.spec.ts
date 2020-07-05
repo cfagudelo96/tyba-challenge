@@ -1,3 +1,5 @@
+import * as bcrypt from 'bcrypt';
+
 import { User } from './user.entity';
 
 jest.mock('bcrypt');
@@ -8,5 +10,15 @@ describe('User', () => {
     const user = new User({ password });
     await user.encryptPassword();
     expect(user.password).not.toBe(password);
+  });
+
+  it('should determine if a given password is the encrypted one', async () => {
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+    const password = 'Test12345';
+    const passwordProvided = 'No';
+    const user = new User({ password });
+    const result = await user.isSamePassword(passwordProvided);
+    expect(bcrypt.compare).toHaveBeenCalledWith(passwordProvided, password);
+    expect(result).toBe(true);
   });
 });
